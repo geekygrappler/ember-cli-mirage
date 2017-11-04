@@ -373,6 +373,50 @@ module('Unit | Server #create', function() {
     server.shutdown();
   });
 
+  test('afterCreate deleting and recreating', function(assert) {
+    let CommentFactory = Factory.extend({
+      content: 'content'
+    });
+    let ArticleFactory = Factory.extend({
+      title: 'Lorem ipsum',
+
+      withComments: trait({
+        afterCreate(article, server) {
+          article.comments = [
+            server.create('comment', { content: 'Hai' }),
+            server.create('comment', { content: 'Bai' })
+          ];
+        }
+      })
+    });
+
+    let server = new Server({
+      environment: 'test',
+      models: {
+        article: Model.extend({
+          comments: hasMany()
+        }),
+        comment: Model.extend({
+        })
+      },
+      factories: {
+        article: ArticleFactory,
+        comment: CommentFactory
+      }
+    });
+
+    let articleWithComments = server.create('article', 'withComments');
+
+    articleWithComments.comments.destroy();
+
+    articleWithComments.update({
+      comments: [
+        server.create('comment', { content: 'yo' }),
+        server.create('comment', { content: 'yiggidy' })
+      ]
+    });
+  });
+
   test('create does not execute afterCreate callbacks from traits that are not applied', function(assert) {
     let CommentFactory = Factory.extend({
       content: 'content'
